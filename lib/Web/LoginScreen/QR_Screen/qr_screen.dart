@@ -20,7 +20,6 @@ class _QRCodeDisplayScreenState extends State<QRCodeDisplayScreen>
   late AnimationController _controller;
   late AnimationController _pulseController;
   late Animation<double> _animation;
-  String text = "";
   String qrData = "";
   bool _showQR = false;
   bool _isProcessing = false;
