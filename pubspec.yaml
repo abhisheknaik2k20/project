@@ -30,6 +30,8 @@ dependencies:
   flutter_local_notifications: ^17.2.3
   googleapis_auth: ^1.6.0
   googleapis: ^13.2.0
+  permission_handler: ^10.0.0
+
 
 dependency_overrides:
   firebase_auth_web: 5.13.1

@@ -3,11 +3,13 @@ import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:project/firebase_logic/FCM/fcm.dart';
 import 'package:project/firebase_logic/webrtc/signaling.dart';
 
 class MyHomePage extends StatefulWidget {
   final String userId;
-  const MyHomePage({required this.userId, super.key});
+  final bool flag;
+  const MyHomePage({required this.flag, required this.userId, super.key});
 
   @override
   State<MyHomePage> createState() => _MyHomePageState();
@@ -17,7 +19,9 @@ class _MyHomePageState extends State<MyHomePage> {
   Signaling signaling = Signaling();
   final RTCVideoRenderer _localRenderer = RTCVideoRenderer();
   final RTCVideoRenderer _remoteRenderer = RTCVideoRenderer();
-  String? roomId;
+  String roomId = "Sameroom";
+  late FirebaseMessaging _firebaseMessaging;
+  late FCMSender _fcmSender;
 
   @override
   void initState() {
@@ -26,10 +30,17 @@ class _MyHomePageState extends State<MyHomePage> {
     _initializeRenderers();
     _setupSignaling();
     _setupFCM();
+    if (widget.flag) {
+      _createRoom();
+    } else {
+      _joinRoom(roomId);
+    }
+    _fcmSender = FCMSender();
   }
 
   Future<void> _initializeFirebase() async {
     await Firebase.initializeApp();
+    _firebaseMessaging = FirebaseMessaging.instance;
   }
 
   void _initializeRenderers() async {
@@ -45,15 +56,21 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   void _setupFCM() async {
-    FirebaseMessaging messaging = FirebaseMessaging.instance;
-
-    NotificationSettings settings = await messaging.requestPermission(
+    NotificationSettings settings = await _firebaseMessaging.requestPermission(
       alert: true,
       badge: true,
       sound: true,
     );
 
     if (settings.authorizationStatus == AuthorizationStatus.authorized) {
+      String? token = await _firebaseMessaging.getToken();
+      print("FCM Token: $token");
+
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(widget.userId)
+          .set({'fcmToken': token}, SetOptions(merge: true));
+
       FirebaseMessaging.onMessage.listen((RemoteMessage message) {
         if (message.data['type'] == 'call_offer') {
           _handleIncomingCall(message.data['roomId']);
@@ -65,6 +82,9 @@ class _MyHomePageState extends State<MyHomePage> {
           _handleIncomingCall(message.data['roomId']);
         }
       });
+
+      FirebaseMessaging.onBackgroundMessage(
+          _firebaseMessagingBackgroundHandler);
     }
   }
 
@@ -73,7 +93,8 @@ class _MyHomePageState extends State<MyHomePage> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Incoming Call'),
-        content: const Text('You have an incoming call. Would you like to answer?'),
+        content:
+            const Text('You have an incoming call. Would you like to answer?'),
         actions: [
           TextButton(
             child: const Text('Decline'),
@@ -95,11 +116,9 @@ class _MyHomePageState extends State<MyHomePage> {
 
   Future<void> _createRoom() async {
     await signaling.openUserMedia(_localRenderer, _remoteRenderer);
-    roomId = await signaling.createRoom(_remoteRenderer);
+    await signaling.createRoom(_remoteRenderer);
     setState(() {});
-
-    // Send FCM notification to the other user
-    await _sendCallNotification(widget.userId, roomId!);
+    await _sendCallNotification(widget.userId, "Sameroom");
   }
 
   Future<void> _joinRoom(String roomId) async {
@@ -108,12 +127,24 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Future<void> _sendCallNotification(String recipientId, String roomId) async {
-    await FirebaseFirestore.instance.collection('notifications').add({
-      'recipientId': recipientId,
-      'type': 'call_offer',
-      'roomId': roomId,
-      'timestamp': FieldValue.serverTimestamp(),
-    });
+    DocumentSnapshot userDoc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(recipientId)
+        .get();
+
+    String? recipientToken = userDoc.get('fcmToken');
+
+    if (recipientToken != null) {
+      await _fcmSender.sendNotification(
+        fcmToken: recipientToken,
+        title: 'Incoming Call',
+        body: 'Tap to join the call',
+        data: {
+          'type': 'call_offer',
+          'roomId': roomId,
+        },
+      );
+    }
   }
 
   @override
@@ -163,5 +194,15 @@ class _MyHomePageState extends State<MyHomePage> {
     _localRenderer.dispose();
     _remoteRenderer.dispose();
     super.dispose();
+  }
+}
+
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp();
+  print("Handling a background message: ${message.messageId}");
+  if (message.data['type'] == 'call_offer') {
+    // You can't show UI when the app is in the background,
+    // but you can process the data and show a notification
+    // which the user can tap to open the app
   }
 }

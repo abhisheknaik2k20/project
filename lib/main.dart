@@ -5,15 +5,18 @@ import 'package:project/Mobile/VideoCall/fetch_users.dart';
 import 'package:project/colors/colors_scheme.dart';
 import 'package:project/firebase_options.dart';
 
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  final notificationService = NotificationService();
+
+  await notificationService.initialize((String route) {
+    // Navigate to the specified route
+    navigatorKey.currentState?.pushNamed(route);
+  });
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-
-  // Initialize NotificationService
-  final notificationService = NotificationService();
-  await notificationService.initialize();
 
   runApp(const MyApp());
 }

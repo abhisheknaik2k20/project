@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:project/Mobile/Notifications/notifications.dart';
-import 'package:project/firebase_logic/FCM/fcm.dart';
+import 'package:project/Mobile/VideoCall/webrtc.dart';
 import 'package:project/firebase_logic/FCM/pushNotidata.dart';
 
 class FetchUsersWEBRTC extends StatefulWidget {
@@ -41,7 +41,6 @@ class _FetchUsersWEBRTCState extends State<FetchUsersWEBRTC> {
           if (accessTokenSnapshot.hasError) {
             return Center(child: Text('Error: ${accessTokenSnapshot.error}'));
           }
-//          final accessToken = accessTokenSnapshot.data!;
 
           return StreamBuilder<QuerySnapshot>(
             stream: FirebaseFirestore.instance.collection('users').snapshots(),
@@ -74,24 +73,34 @@ class _FetchUsersWEBRTCState extends State<FetchUsersWEBRTC> {
                     onTap: () async {
                       final fcmToken = userData['fcmToken'] as String?;
                       if (fcmToken != null) {
-                        final result = await FCMSender().sendNotification(
-                          fcmToken: userData['fcmToken'],
-                          title: "New Message",
-                          body: "You have a new message!",
-                          data: {"type": "message", "sender": currentUserId},
+                        // final result = await FCMSender().sendNotification(
+                        //   fcmToken: userData['fcmToken'],
+                        //   title: "New Message",
+                        //   body: "You have a new message!",
+                        //   data: {"type": "message", "sender": currentUserId},
+                        // );
+                        // if (result) {
+                        //   ScaffoldMessenger.of(context).showSnackBar(
+                        //     const SnackBar(
+                        //         content:
+                        //             Text('Notification sent successfully')),
+                        //   );
+                        // } else {
+                        //   ScaffoldMessenger.of(context).showSnackBar(
+                        //     const SnackBar(
+                        //         content: Text('Failed to send notification')),
+                        //   );
+                        // }
+                        Navigator.of(context).pushAndRemoveUntil(
+                          MaterialPageRoute(
+                            builder: (context) => MyHomePage(
+                              flag: true,
+                              userId: userId,
+                            ),
+                          ),
+                          (Route<dynamic> route) =>
+                              false, // This removes all previous routes
                         );
-                        if (result) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                                content:
-                                    Text('Notification sent successfully')),
-                          );
-                        } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                                content: Text('Failed to send notification')),
-                          );
-                        }
                       } else {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
