@@ -1,11 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:project/Mobile/DashBoard/nav_bar/navigation.dart';
+import 'package:project/notifications/periodic_noti.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:url_launcher/url_launcher_string.dart';
+import '../../calender/calendarPage.dart';
+import 'package:timezone/timezone.dart' as tz;
 
-List<Widget> pages = const [
+List<Widget> pages = [
   Page1(),
-  Page2(),
-  Page3(),
-  Page4(),
+  CalendarPage(),
+  const Page3(),
+  const Page4(),
 ];
 
 class HomeScreen extends StatefulWidget {
@@ -23,6 +29,13 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _pageController = PageController();
+    NotificationService().initNotification();
+    NotificationService().showNotification(
+      id: 0,
+      title: "ElderlyMate",
+      body: "Hello, We welcome you to our community",
+      payLoad: "You we receive scheduled notification from now on"
+    );
   }
 
   @override
@@ -65,13 +78,65 @@ class _HomeScreenState extends State<HomeScreen> {
 }
 
 class Page1 extends StatelessWidget {
-  const Page1({super.key});
+
+  late String lon = "";
+  late String lat = "";
+
+  Page1({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
+    // DateTime scheduleTime = DateTime.now().add(Duration(seconds: 123123))
+    return Scaffold(
       backgroundColor: Colors.red,
+      body: Column(
+          children: [
+            ElevatedButton(onPressed: () {
+              _getCurrentLocation().then((Value) {
+                lat = '${Value.latitude}';
+                lon = '${Value.longitude}';
+                print(lat);
+                print(lon);
+              });
+            }, child: Text("tap")),
+            ElevatedButton(onPressed: () {
+              _getCurrentLocation().then((Value) {
+                lat = '${Value.latitude}';
+                lon = '${Value.longitude}';
+                print(lat);
+                print(lon);
+              });
+              _openMap(lat, lon);
+            }, child: Text("open")),
+          ]),
     );
+  }
+
+  Future<void> _openMap(String lat, String lon) async {
+    final Uri url = Uri.parse(
+      'https://www.google.com/maps/search/?api=1&query=$lat,$lon',
+    );
+    if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+      throw Exception('Could not launch $url');
+    }
+  }
+
+  Future<Position> _getCurrentLocation() async {
+    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if(!serviceEnabled){
+      return Future.error('Location service are disabled!!');
+    }
+    LocationPermission lp = await Geolocator.checkPermission();
+    if(lp == LocationPermission.denied){
+      lp = await Geolocator.requestPermission();
+      if(lp == LocationPermission.denied){
+        return Future.error('Location service are disabled!!');
+      }
+    }
+    if(lp == LocationPermission.deniedForever){
+      return Future.error('Location service are forever disabled!!');
+    }
+    return await Geolocator.getCurrentPosition();
   }
 }
 

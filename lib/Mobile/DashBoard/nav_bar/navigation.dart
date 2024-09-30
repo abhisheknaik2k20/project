@@ -13,7 +13,7 @@ class NavBar extends StatelessWidget {
 
   final List gbuttons = [
     ["Home", Icons.home_rounded],
-    ["Likes", Icons.favorite_rounded],
+    ["Tasks", Icons.calendar_month_outlined],
     ["Search", Icons.search_rounded],
     ["Contacts", Icons.person_rounded],
   ];

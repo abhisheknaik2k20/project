@@ -98,15 +98,15 @@ class _LoginSignupScreenState extends State<LoginSignupScreen>
                           children: [
                             if (!isLogin)
                               _buildTextField(
-                                  controller: _emailController,
-                                  hint: 'Email',
+                                  controller: _nameController,
+                                  hint: 'Name',
                                   icon: Icons.email),
                             if (!isLogin) const SizedBox(height: 16),
                             if (!isLogin) _buildPhoneField(),
                             if (!isLogin) const SizedBox(height: 16),
                             _buildTextField(
-                                controller: _nameController,
-                                hint: 'Name',
+                                controller: _emailController,
+                                hint: 'Email',
                                 icon: Icons.person),
                             const SizedBox(height: 16),
                             _buildTextField(
@@ -279,9 +279,7 @@ class _LoginSignupScreenState extends State<LoginSignupScreen>
     return Align(
       alignment: Alignment.center,
       child: TextButton(
-        onPressed: () {
-          // Implement forgot password logic
-        },
+        onPressed: () {},
         child: Text(
           'Forgot Password?',
           style: TextStyle(color: colors.primary),
@@ -293,9 +291,11 @@ class _LoginSignupScreenState extends State<LoginSignupScreen>
   Widget _buildActionButton(ColorScheme colors) {
     return ElevatedButton(
       onPressed: () async {
+        print("Button Pressed");
         if (isLogin &&
             _emailController.text.isNotEmpty &&
             _passwordController.text.isNotEmpty) {
+          print("Going to login");
           UserCredential? user = await loginEmailPass(
               context, _emailController.text, _passwordController.text);
           if (user != null) {
@@ -303,7 +303,7 @@ class _LoginSignupScreenState extends State<LoginSignupScreen>
               MaterialPageRoute(builder: (context) => const BlackScreen()),
               (Route<dynamic> route) => false,
             );
-          }
+          };
         }
         if (_emailController.text.isNotEmpty &&
             _passwordController.text.isNotEmpty &&

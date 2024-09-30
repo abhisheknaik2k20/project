@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'dart:math' show pi;
-
 import 'package:project/Mobile/DashBoard/drawer/drawer.dart';
 import 'package:project/Mobile/DashBoard/homescreen.dart';
+import 'package:permission_handler/permission_handler.dart';
+import '../../notifications/periodic_noti.dart';
 
 class BlackScreen extends StatelessWidget {
   const BlackScreen({super.key});
+
 
   @override
   Widget build(BuildContext context) {
@@ -38,7 +40,6 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   late final Animation<Offset> _translateAnimation;
   late final Animation<double> _scaleAnimation;
   late final Animation<double> _rotateAnimation;
-
   @override
   void initState() {
     super.initState();
@@ -61,6 +62,9 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
       begin: 0,
       end: pi / 20,
     ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
+    print("here");
+    requestExactAlarmPermission();
+    print("here now");
   }
 
   @override
@@ -81,6 +85,18 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
       _controller.reverse();
     }
   }
+
+  Future<void> requestExactAlarmPermission() async {
+    if (await Permission.scheduleExactAlarm.request().isGranted) {
+      // Call your scheduling method
+    } else {
+      // Permission is denied
+      print("Exact alarm permission is not granted");
+      // You may also navigate the user to app settings to enable it
+      openAppSettings();
+    }
+  }
+
 
   @override
   Widget build(BuildContext context) {
