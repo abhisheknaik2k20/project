@@ -90,9 +90,7 @@ class _QRCodeDisplayScreenState extends State<QRCodeDisplayScreen>
 
     try {
       await _deleteTempAccount();
-      print("Deleted account.....");
-      UserCredential userCredential =
-          await FirebaseAuth.instance.signInWithEmailAndPassword(
+      await FirebaseAuth.instance.signInWithEmailAndPassword(
         email: email,
         password: password,
       );

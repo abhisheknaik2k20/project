@@ -1,5 +1,7 @@
 import 'package:dev_icons/dev_icons.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:project/Mobile/DashBoard/black_screen.dart';
 import 'package:project/firebase_logic/Login_Auth/login_auth.dart';
 
 class LoginSignupScreen extends StatefulWidget {
@@ -294,19 +296,31 @@ class _LoginSignupScreenState extends State<LoginSignupScreen>
         if (isLogin &&
             _emailController.text.isNotEmpty &&
             _passwordController.text.isNotEmpty) {
-          loginEmailPass(
+          UserCredential? user = await loginEmailPass(
               context, _emailController.text, _passwordController.text);
+          if (user != null) {
+            Navigator.of(context).pushAndRemoveUntil(
+              MaterialPageRoute(builder: (context) => const BlackScreen()),
+              (Route<dynamic> route) => false,
+            );
+          }
         }
         if (_emailController.text.isNotEmpty &&
             _passwordController.text.isNotEmpty &&
             _phoneController.text.isNotEmpty &&
             _nameController.text.isNotEmpty) {
-          signupEmailPassMobile(
+          UserCredential? user = await signupEmailPassMobile(
               context,
               _emailController.text,
               _passwordController.text,
               _nameController.text,
               _phoneController.text);
+          if (user != null) {
+            Navigator.of(context).pushAndRemoveUntil(
+              MaterialPageRoute(builder: (context) => const BlackScreen()),
+              (Route<dynamic> route) => false,
+            );
+          }
         }
       },
       style: ElevatedButton.styleFrom(

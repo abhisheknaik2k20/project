@@ -3,6 +3,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:project/Mobile/DashBoard/black_screen.dart';
 
 Future<UserCredential?> loginEmailPass(
     BuildContext context, String email, String password) async {
@@ -18,6 +19,7 @@ Future<UserCredential?> loginEmailPass(
     ScaffoldMessenger.of(context).showSnackBar(returnErrorSnackbar(error));
   }
   Navigator.of(context).pop();
+
   return null;
 }
 

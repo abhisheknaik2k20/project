@@ -23,6 +23,8 @@ dependencies:
   qr_flutter: ^4.1.0
   google_nav_bar: ^5.0.6
   mobile_scanner: ^5.2.3
+  wear: ^1.1.0
+  flutter_webrtc: ^0.11.7
 
 dependency_overrides:
   firebase_auth_web: 5.13.1
