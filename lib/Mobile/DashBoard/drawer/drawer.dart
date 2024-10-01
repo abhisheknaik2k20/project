@@ -1,9 +1,23 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:project/Mobile/DashBoard/QR_Scanner/qr_scanner.dart';
+import 'package:project/Mobile/calender/calendarPage.dart';
+import 'package:project/Mobile/rewardsTimeline.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../../../supportPage.dart';
 
 class EnhancedProfessionalSideDrawer extends StatelessWidget {
   const EnhancedProfessionalSideDrawer({super.key});
+
+  Future<void> _openPlayStore() async {
+    final Uri url = Uri.parse(
+      'https://play.google.com',
+    );
+    if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+      throw Exception('Could not launch $url');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -28,11 +42,15 @@ class EnhancedProfessionalSideDrawer extends StatelessWidget {
                 padding: EdgeInsets.zero,
                 children: [
                   _buildDrawerItem(context, Icons.calendar_today, 'Schedule',
-                      badge: '3'),
+                      badge: '3',
+                  onTap: (){
+                    Navigator.pushReplacement(context, MaterialPageRoute(builder: (context)=> const CalendarPage()));
+                  }),
                   _buildDrawerItem(context, Icons.star_outline, 'Rewards',
-                      badge: '2'),
-                  _buildDrawerItem(
-                      context, Icons.credit_card_outlined, 'Payment Methods'),
+                      badge: '2',
+                  onTap: (){
+                    Navigator.push(context, MaterialPageRoute(builder: (context)=> RewardsTimeline()));
+                  }),
                   _buildDrawerItem(
                     context,
                     Icons.qr_code,
@@ -45,9 +63,15 @@ class EnhancedProfessionalSideDrawer extends StatelessWidget {
                     ),
                   ),
                   _buildDrawerItem(
-                      context, Icons.person_add_outlined, 'Refer a Friend'),
+                      context, Icons.person_add_outlined, 'Refer a Friend',
+                  onTap: () async {
+                      _openPlayStore();
+                      }),
                   _buildDrawerItem(
-                      context, Icons.support_agent_outlined, 'Support'),
+                      context, Icons.support_agent_outlined, 'Support',
+                  onTap: (){
+                        Navigator.push(context, MaterialPageRoute(builder: (context)=>supportPage()));
+                  }),
                 ],
               ),
             ),
@@ -58,7 +82,23 @@ class EnhancedProfessionalSideDrawer extends StatelessWidget {
       ),
     );
   }
-
+  Future<String> getUserName() {
+    return FirebaseFirestore.instance
+        .collection('users')
+        .doc(FirebaseAuth.instance.currentUser!.uid)
+        .get()
+        .then((docSnapshot) {
+      if (docSnapshot.exists) {
+        Map<String, dynamic> data = docSnapshot.data() as Map<String, dynamic>;
+        return data['name'] as String? ?? 'Unknown';
+      } else {
+        return 'User not found';
+      }
+    }).catchError((error) {
+      print('Error fetching user name: $error');
+      return 'Error';
+    });
+  }
   Widget _buildUserHeader(BuildContext context) {
     final Size size = MediaQuery.of(context).size;
     final double paddingFactor = size.width * 0.05;
@@ -79,17 +119,42 @@ class EnhancedProfessionalSideDrawer extends StatelessWidget {
             ),
           ),
           SizedBox(height: size.height * 0.02),
-          Text(
-            FirebaseAuth.instance.currentUser!.displayName ?? "None",
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 18 * fontSizeFactor,
-              fontWeight: FontWeight.bold,
-            ),
+          FutureBuilder<String>(
+            future: getUserName(),
+            builder: (BuildContext context, AsyncSnapshot<String> snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return Text(
+                  "Loading...",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18 * fontSizeFactor,
+                    fontWeight: FontWeight.bold,
+                  ),
+                );
+              } else if (snapshot.hasError) {
+                return Text(
+                  "Error",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18 * fontSizeFactor,
+                    fontWeight: FontWeight.bold,
+                  ),
+                );
+              } else {
+                return Text(
+                  snapshot.data ?? "User",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18 * fontSizeFactor,
+                    fontWeight: FontWeight.bold,
+                  ),
+                );
+              }
+            },
           ),
           SizedBox(height: size.height * 0.005),
           Text(
-            FirebaseAuth.instance.currentUser!.email ?? "None",
+            FirebaseAuth.instance.currentUser?.email ?? "None",
             style: TextStyle(
               color: Colors.grey[400],
               fontSize: 14 * fontSizeFactor,

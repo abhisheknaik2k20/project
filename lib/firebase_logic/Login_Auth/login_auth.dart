@@ -2,24 +2,68 @@
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 
 Future<UserCredential?> loginEmailPass(
     BuildContext context, String email, String password) async {
   showDialog(
-      context: context,
-      builder: (context) => const Center(
-            child: CircularProgressIndicator(),
-          ));
+    context: context,
+    builder: (context) => const Center(
+      child: CircularProgressIndicator(),
+    ),
+  );
+
   try {
-    return await FirebaseAuth.instance
+    // Perform login
+    UserCredential userCredential = await FirebaseAuth.instance
         .signInWithEmailAndPassword(email: email, password: password);
+    // Generate FCM token
+    String? fcmToken = await FirebaseMessaging.instance.getToken();
+
+    if (fcmToken != null) {
+      // Store FCM token in Firestore using set with merge
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userCredential.user!.uid)
+          .set({'fcmToken': fcmToken}, SetOptions(merge: true));
+    }
+
+    // Set up FCM token refresh listener
+    FirebaseMessaging.instance.onTokenRefresh.listen((newToken) {
+      FirebaseFirestore.instance
+          .collection('users')
+          .doc(userCredential.user!.uid)
+          .set({'fcmToken': newToken}, SetOptions(merge: true));
+    });
+
+    Navigator.of(context).pop(); // Close loading dialog
+    return userCredential;
   } on FirebaseAuthException catch (error) {
+    Navigator.of(context).pop(); // Close loading dialog
     ScaffoldMessenger.of(context).showSnackBar(returnErrorSnackbar(error));
+  } catch (error) {
+    Navigator.of(context).pop(); // Close loading dialog
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('An unexpected error occurred: $error')),
+    );
   }
-  Navigator.of(context).pop();
 
   return null;
+}
+
+// Function to update FCM token
+Future<void> updateFCMToken() async {
+  User? user = FirebaseAuth.instance.currentUser;
+  if (user != null) {
+    String? token = await FirebaseMessaging.instance.getToken();
+    if (token != null) {
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .set({'fcmToken': token}, SetOptions(merge: true));
+    }
+  }
 }
 
 Future<UserCredential?> signupEmailPass(

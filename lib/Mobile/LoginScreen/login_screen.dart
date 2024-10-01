@@ -1,4 +1,4 @@
-import 'package:dev_icons/dev_icons.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:project/Mobile/DashBoard/black_screen.dart';
@@ -24,6 +24,8 @@ class _LoginSignupScreenState extends State<LoginSignupScreen>
   late Animation<Offset> _slideAnimation;
   late Animation<double> _scaleAnimation;
 
+  String _selectedSignupType = 'User';
+
   @override
   void initState() {
     super.initState();
@@ -36,13 +38,18 @@ class _LoginSignupScreenState extends State<LoginSignupScreen>
       curve: Curves.easeInOut,
     );
     _slideAnimation =
-        Tween<Offset>(begin: const Offset(0, 0.2), end: Offset.zero)
-            .animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeInOut,
-    ));
+        Tween<Offset>(begin: const Offset(0, 0.2), end: Offset.zero).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: Curves.easeInOut,
+      ),
+    );
     _scaleAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
-        CurvedAnimation(parent: _animationController, curve: Curves.easeInOut));
+      CurvedAnimation(
+        parent: _animationController,
+        curve: Curves.easeInOut,
+      ),
+    );
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Future.delayed(const Duration(milliseconds: 100), () {
         _animationController.forward();
@@ -83,7 +90,10 @@ class _LoginSignupScreenState extends State<LoginSignupScreen>
               _buildLogo(colors),
               const SizedBox(height: 24),
               _buildHeader(colors),
-              const SizedBox(height: 16),
+              if (!isLogin) ...[
+                const SizedBox(height: 16),
+                _buildSignupTypeDropdown(colors),
+              ],
               const SizedBox(height: 16),
               Expanded(
                 child: FadeTransition(
@@ -100,14 +110,14 @@ class _LoginSignupScreenState extends State<LoginSignupScreen>
                               _buildTextField(
                                   controller: _nameController,
                                   hint: 'Name',
-                                  icon: Icons.email),
+                                  icon: Icons.person),
                             if (!isLogin) const SizedBox(height: 16),
                             if (!isLogin) _buildPhoneField(),
                             if (!isLogin) const SizedBox(height: 16),
                             _buildTextField(
                                 controller: _emailController,
                                 hint: 'Email',
-                                icon: Icons.person),
+                                icon: Icons.email),
                             const SizedBox(height: 16),
                             _buildTextField(
                                 controller: _passwordController,
@@ -118,21 +128,6 @@ class _LoginSignupScreenState extends State<LoginSignupScreen>
                             _buildActionButton(colors),
                             if (isLogin) _buildForgotPassword(colors),
                             const SizedBox(height: 20),
-                            if (isLogin)
-                              const Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [Text("Or Login with")],
-                              ),
-                            const SizedBox(height: 24),
-                            if (isLogin)
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  _buildGoogleLogin(colors),
-                                  const SizedBox(width: 20),
-                                  _buildGitHubLogin(colors),
-                                ],
-                              ),
                             _buildToggleButton(colors),
                           ],
                         ),
@@ -188,6 +183,39 @@ class _LoginSignupScreenState extends State<LoginSignupScreen>
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildSignupTypeDropdown(ColorScheme colors) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: colors.onSurface.withOpacity(0.1)),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: _selectedSignupType,
+          isExpanded: true,
+          icon: Icon(Icons.arrow_drop_down, color: colors.onSurface),
+          items: <String>['User', 'Guardian', 'Caretaker']
+              .map<DropdownMenuItem<String>>((String value) {
+            return DropdownMenuItem<String>(
+              value: value,
+              child: Text(
+                value,
+                style: TextStyle(color: colors.onSurface),
+              ),
+            );
+          }).toList(),
+          onChanged: (String? newValue) {
+            setState(() {
+              _selectedSignupType = newValue!;
+            });
+          },
+        ),
       ),
     );
   }
@@ -291,11 +319,9 @@ class _LoginSignupScreenState extends State<LoginSignupScreen>
   Widget _buildActionButton(ColorScheme colors) {
     return ElevatedButton(
       onPressed: () async {
-        print("Button Pressed");
         if (isLogin &&
             _emailController.text.isNotEmpty &&
             _passwordController.text.isNotEmpty) {
-          print("Going to login");
           UserCredential? user = await loginEmailPass(
               context, _emailController.text, _passwordController.text);
           if (user != null) {
@@ -305,7 +331,8 @@ class _LoginSignupScreenState extends State<LoginSignupScreen>
             );
           }
         }
-        if (_emailController.text.isNotEmpty &&
+        if (!isLogin &&
+            _emailController.text.isNotEmpty &&
             _passwordController.text.isNotEmpty &&
             _phoneController.text.isNotEmpty &&
             _nameController.text.isNotEmpty) {
@@ -314,7 +341,8 @@ class _LoginSignupScreenState extends State<LoginSignupScreen>
               _emailController.text,
               _passwordController.text,
               _nameController.text,
-              _phoneController.text);
+              _phoneController.text,
+              _selectedSignupType);
           if (user != null) {
             Navigator.of(context).pushAndRemoveUntil(
               MaterialPageRoute(builder: (context) => const BlackScreen()),
@@ -345,60 +373,6 @@ class _LoginSignupScreenState extends State<LoginSignupScreen>
     );
   }
 
-  Widget _buildGoogleLogin(ColorScheme colors) {
-    return GestureDetector(
-      onTap: () {
-        signInWithGoogle(context);
-      },
-      child: Container(
-        width: 60,
-        height: 60,
-        decoration: BoxDecoration(
-          color: Colors.grey.shade900,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: colors.onSurface, width: 2),
-        ),
-        child: const Center(
-          child: SizedBox(
-              width: 30,
-              height: 30,
-              child: Icon(
-                DevIcons.googlePlain,
-                color: Colors.white,
-                size: 30,
-              )),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildGitHubLogin(ColorScheme colors) {
-    return GestureDetector(
-      onTap: () async {
-        gitHubSignIn(context);
-      },
-      child: Container(
-        width: 60,
-        height: 60,
-        decoration: BoxDecoration(
-          color: Colors.grey[900],
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: colors.onSurface, width: 2),
-        ),
-        child: const Center(
-          child: SizedBox(
-              width: 30,
-              height: 30,
-              child: Icon(
-                DevIcons.githubOriginal,
-                color: Colors.white,
-                size: 30,
-              )),
-        ),
-      ),
-    );
-  }
-
   Widget _buildToggleButton(ColorScheme colors) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -417,5 +391,55 @@ class _LoginSignupScreenState extends State<LoginSignupScreen>
         ),
       ],
     );
+  }
+}
+
+Future<UserCredential?> signupEmailPassMobile(
+    BuildContext context,
+    String email,
+    String password,
+    String name,
+    String phone,
+    String accountType) async {
+  try {
+    UserCredential userCredential = await FirebaseAuth.instance
+        .createUserWithEmailAndPassword(email: email, password: password);
+
+    String docId = userCredential.user!.uid;
+
+    if (accountType == 'User') {
+      await FirebaseFirestore.instance.collection('users').doc(docId).set({
+        'email': email,
+        'name': name,
+        'phone': phone,
+        'uid': docId,
+      });
+    } else if (accountType == 'Guardian') {
+      await FirebaseFirestore.instance.collection('guardians').doc(docId).set({
+        'email': email,
+        'name': name,
+        'phone': phone,
+        'gid': docId,
+      });
+    } else if (accountType == 'Caretaker') {
+      await FirebaseFirestore.instance.collection('caretakers').doc(docId).set({
+        'email': email,
+        'name': name,
+        'phone': phone,
+        'cid': docId,
+      });
+    }
+
+    return userCredential;
+  } on FirebaseAuthException catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(e.message ?? 'Signup failed')),
+    );
+    return null;
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('An unexpected error occurred')),
+    );
+    return null;
   }
 }

@@ -13,9 +13,10 @@ class NavBar extends StatelessWidget {
 
   final List gbuttons = [
     ["Home", Icons.home_rounded],
-    ["Likes", Icons.favorite_rounded],
-    ["Search", Icons.search_rounded],
-    ["Contacts", Icons.person_rounded],
+    ["Tasks", Icons.calendar_month_outlined],
+    ["Contacts", Icons.contact_mail_outlined],
+    ["History", Icons.history],
+    ["Directory",Icons.store_mall_directory_outlined]
   ];
 
   @override
@@ -41,7 +42,7 @@ class NavBar extends StatelessWidget {
           activeColor: Colors.white,
           iconSize: iconSize,
           padding: EdgeInsets.symmetric(
-            horizontal: size.width * 0.05, // 5% of screen width
+            horizontal: size.width * 0.03, // 5% of screen width
             vertical: size.height * 0.015, // 1.5% of screen height
           ),
           duration: const Duration(milliseconds: 400),
